@@ -1,6 +1,11 @@
 
 import java.util.Random;
 import java.lang.reflect.Field;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 public class Test
 {
 	private String name;
@@ -116,5 +121,75 @@ public class Test
 		}
 		
 		oini i_ = new oini(c2);
+		
+		class AlarmClock
+		{
+			private int delay;
+			private boolean flag;
+			public AlarmClock(int delay,boolean flag)
+			{
+				this.delay=delay;
+				this.flag=flag;
+			}
+			
+			public void start()
+			{
+				class Printer implements ActionListener
+				{
+					
+					@Override
+					public void actionPerformed(ActionEvent e)
+					{
+						SimpleDateFormat format = new SimpleDateFormat("k:m:s");
+						String result = format.format(new Date());
+						System.out.println("cur time is : "+result);
+						if(flag)
+						{
+							Toolkit.getDefaultToolkit().beep();
+						}
+					}
+				}
+				new Timer(delay,new Printer()).start();
+			}
+		}
+		
+		//AlarmClock ck1 = new AlarmClock(1000,true);
+		//ck1.start();
+		//JOptionPane.showMessageDialog(null,"are you sure exit?");
+		class MaxMin
+		{
+			class Result
+			{
+				private double max;
+				private double min;
+				public Result(double max,double min)
+				{
+					this.max = max;
+					this.min= min;
+				}
+				public double getMax(){return max;}
+				public double getMin(){return min;}
+			}
+			
+			public  Result getResult(double[] array)
+			{
+				double max = Double.MIN_VALUE;
+				double min = Double.MAX_VALUE;
+				for(double i : array)
+				{
+					if(i>max) max = i;
+					if(i<min) min = i;
+				}
+				return new Result(max,min);
+			}
+		}
+		
+		MaxMin mm = new MaxMin();
+		MaxMin.Result mr = mm.getResult(new double[]{11.08,44.0,22.8,99.9,54.32,77.61});
+		System.out.println("max is "+ mr.getMax()+" min is "+mr.getMin());
+		System.out.println(mr.getClass().getPackage());
+		System.out.println(mr.getClass().getName());
+		System.out.println(mr.getClass().getMethods());
+		
 	}
 }
