@@ -15,6 +15,9 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.HashMap;
+import java.io.*;
+import java.util.zip.*;
+import java.net.URL;
 
 public class Test
 {
@@ -53,13 +56,396 @@ public class Test
 			moveDish(lv-1,inter,from,to);
 		}
 	}
+	
+	public static void myprint(String str)
+	{
+		System.out.println(str);
+	}
 	public static void main(String[] args)
 	{
 		//test1();
 		//test2();
 		//test3();
 		//test4();
-		test5();
+		//test5();
+		//test6();
+		//test7();
+		//test8();
+		//test9();
+		//test10();
+		//test11();
+		//test12();
+		test13();
+	}
+	public static void test13()
+	{
+		class myIcon implements Icon
+		{
+			private int width;
+			private int height;
+			public int getIconHeight()
+			{
+				return this.height;
+			}
+			public int getIconWidth()
+			{
+				return this.width;
+			}
+			public myIcon(int width,int height)
+			{
+				myprint("in myIcon constructor");
+				this.width = width;
+				this.height = height;
+			}
+			public void paintIcon(Component arg0,Graphics arg1,int x,int y)
+			{
+				arg1.fillOval(x,y,width,height);
+			}
+		}
+		
+		class myJDialog extends JDialog
+		{
+			public myJDialog(JFrame jfIns)
+			{
+				super(jfIns,"JDialog 窗体",true);
+				Container ct = getContentPane();
+				ct.add(new JLabel("这是一个对话框"));
+				setSize(400,200);
+				setResizable(false);
+			}
+		}
+		
+		class myFrame extends JFrame
+		{
+			public myFrame()
+			{
+				super("sndmfakjn");
+				Container ct = getContentPane();
+				//ct.setLayout(null);
+				JLabel jl = new JLabel("JFrame 窗体");
+				jl.setHorizontalAlignment(SwingConstants.CENTER);
+				ct.add(jl);
+				// JButton bl = new JButton("弹出对话框");
+				// bl.setBounds(10,10,100,20);
+				// bl.addActionListener(new ActionListener(){
+					// public void actionPerformed(ActionEvent e)
+					// {
+						// myJDialog jd = new myJDialog(myFrame.this);
+						// jd.setVisible(true);
+						
+					// }
+				// });
+				// ct.add(bl);
+				setVisible(true);
+				setSize(500,300);
+				setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+				//setResizable(false);
+				
+				//JLabel jf = new JLabel("测试",new myIcon(150,150),SwingConstants.CENTER);
+				//jf.setVisible(true);
+				//jf.setLocation(20,20);
+				//jf.setHorizontalAlignment(SwingConstants.CENTER);
+				//jf.setBounds(10,10,100,20);
+				//ct.add(jf);
+				
+				try
+				{
+					URL url = myFrame.class.getResource("bd_logo1.png"); //new URL("bd_logo1.png");
+					Icon icon = new ImageIcon(url);
+					jl.setIcon(icon);
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+				
+			}
+		}
+		
+		
+		myFrame mjf = new myFrame();
+		
+		
+	}
+	public static void test12()
+	{
+		JFrame jf = new JFrame("hahah");
+		jf.setVisible(true);
+		jf.setSize(200,150);
+		jf.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		
+		Container ct = jf.getContentPane();
+		JLabel jl = new JLabel("这是一个JFrame 窗体");
+		jl.setHorizontalAlignment(SwingConstants.CENTER);
+		ct.add(jl);
+		ct.setBackground(Color.red);
+		
+		JDialog jd = new JDialog(jf,"第一个JDialog窗体",true);
+		jd.setVisible(true);
+		jd.setSize(100,100);
+		
+	}
+	public static void test11()
+	{
+		class myZip
+		{
+			private void zip(String zipFileName,File inputFile) throws Exception
+			{
+				ZipOutputStream out = new ZipOutputStream(new FileOutputStream(zipFileName));
+				zip(out,inputFile,"");
+				myprint("压缩中...");
+				out.close();
+			}
+			
+			private void zip(ZipOutputStream out,File f,String base) throws Exception
+			{
+				if(f.isDirectory())
+				{
+					File[] fl = f.listFiles();
+					out.putNextEntry(new ZipEntry(base+"/"));
+					base = base.length() == 0?"":base+"/";
+					myprint("in zip func 1 base is :"+base);
+					for(int i=0;i<fl.length;++i) zip(out,fl[i],base+fl[i]);
+				}
+				else
+				{
+					out.putNextEntry(new ZipEntry(base));
+					FileInputStream in = new FileInputStream(f);
+					int b;
+					myprint("压缩文件: "+base);
+					while((b=in.read())!=-1) out.write(b);
+					in.close();
+				}
+				
+			}
+		}
+		
+		if (false)
+		{
+			myZip book = new myZip();
+			try
+			{
+				book.zip("afterZip.zip",new File("testZip"));
+				myprint("压缩完成");
+			}
+			catch(Exception ex)
+			{
+				ex.printStackTrace();
+			}
+		}
+		
+		
+		ZipInputStream zin;
+		try
+		{
+			zin = new ZipInputStream(new FileInputStream("afterZip.zip"));
+			ZipEntry entry = zin.getNextEntry();
+			while(((entry = zin.getNextEntry())!=null))
+			{
+				myprint("entry name :"+entry.getName());
+				File file = new File(entry.getName());
+				myprint("file name :"+file.getName()+" "+file.getAbsolutePath()+" "+file.getCanonicalPath());
+				if(!file.exists()) 
+				{
+					file.getParentFile().mkdirs();
+					if(!(entry.getName().endsWith("/")))
+						file.createNewFile();
+					else file.mkdirs();
+					
+				}
+				zin.closeEntry();
+				myprint(entry.getName()+" 解压成功");
+			}
+			zin.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test10()
+	{
+		try
+		{
+			FileOutputStream fs = new FileOutputStream("2.txt",true);
+			DataOutputStream ds = new DataOutputStream(fs);
+			ds.writeUTF("使用 writeUTF 写入数据");
+			ds.writeChars("使用 writeChars 写入数据");
+			ds.writeBytes("使用 writeBytes 写入数据");
+			ds.close();
+			
+			FileInputStream fis = new FileInputStream("2.txt");
+			DataInputStream dis = new DataInputStream(fis);
+			myprint(dis.readUTF());
+			dis.close();
+			
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test9()
+	{
+		String content[] = {"回实现对文件的续写。 ","中写入字符数据的字符流输出流对象",
+		"会抛异常 ","闭后在写的话，会抛IOException"} ;
+		try
+		{
+			File file = new File("1.txt");
+			FileWriter fw = new FileWriter(file);
+			BufferedWriter bufw = new BufferedWriter(fw);
+			for(int k=0;k<content.length;++k)
+			{
+				bufw.write(content[k]);
+				bufw.newLine();
+			}
+			bufw.close();
+			fw.close();
+			
+			FileReader fr = new FileReader(file);
+			BufferedReader bufr = new BufferedReader(fr);
+			String s = null;
+			int i =0 ;
+			while((s=bufr.readLine())!=null)
+			{
+				++i;
+				myprint(s);
+			}
+			bufr.close();
+			fr.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+	}
+	public static void test8()
+	{
+		try
+		{
+			FileReader fin = new FileReader("1.txt");
+			char byt[] = new char[1024*2*2*1024];
+			int len = fin.read(byt);
+			myprint(new String(byt,0,len));
+			fin.close();
+			
+			FileWriter fout = new FileWriter("1.txt");
+			byte[] bt = "over write!!!".getBytes();
+			fout.write("over write!!!哈哈");
+			fout.close();
+			
+			File f = new File("1.txt");
+			f.delete();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test7()
+	{
+		try
+		{
+			FileInputStream fin = new FileInputStream("1.txt");
+			byte byt[] = new byte[1024*2*2*1024];
+			int len = fin.read(byt);
+			myprint(new String(byt,0,len));
+			fin.close();
+			
+			FileOutputStream fout = new FileOutputStream("1.txt");
+			byte[] bt = "over write!!!".getBytes();
+			fout.write("over write!!!".getBytes());
+			fout.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test6()
+	{
+		char[] temp = new char[1024];
+		try
+		{
+			FileWriter writer = new FileWriter("1.txt",true);
+			writer.write("hahahhhhh");
+			writer.flush();
+			writer.close();
+			
+			FileReader rd = new FileReader("1.txt");
+			StringBuilder sb = new StringBuilder();
+			while(rd.read(temp)!=-1) sb.append(temp);
+			System.out.println(sb.toString());
+			rd.close();
+		}
+		catch(FileNotFoundException e)
+		{
+			e.printStackTrace();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		File file = new File("1.txt");
+		if(file.exists())
+		{
+			
+			myprint("文件名: "+file.getName()+" 是否可读: "+file.canRead()+" 长度: "+file.length()+
+			" 绝对路径:"+file.getAbsolutePath());
+			myprint("是文件夹? "+file.isDirectory()+" 最后修改: "+file.lastModified());
+			
+			
+			
+			file.delete();
+			System.out.println("文件已经删除");
+		}
+		
+		Frame f = new Frame();
+		f.setVisible(true);
+		f.addWindowListener(new WindowAdapter(){
+			public void windowClosing(WindowEvent evt)
+			{
+				f.setVisible(false);
+				f.dispose();
+				System.exit(0);
+			}
+		});
+		
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		chooser.setMultiSelectionEnabled(false); //setMultiSelectionEnabled
+		int result = chooser.showOpenDialog(f);
+		if(result == JFileChooser.APPROVE_OPTION)
+		{
+			File[] lf = chooser.getSelectedFile().listFiles(new java.io.FileFilter(){
+				@Override
+				public boolean accept(File pathname)
+				{
+					if (pathname.getName().endsWith(".txt") || pathname.getName().startsWith("newFile_"))
+						return true;
+					else
+						return false;
+				}
+			});
+			
+			int findex = 0;
+			for(File file1 : lf)
+			{
+				++findex;
+				String fn = file1.getName();
+				
+				myprint("rename before file name is :"+fn);
+				//fn.replaceAll(new String("新建文本文档"),new String(""));
+				//myprint("after rename : "+fn);
+				//file1.renameTo(new File(fn.replaceAll("newFile_","")+".txt"));
+				file1.renameTo(new File(String.format("./../Zend/%s",fn)));
+			}
+		}
+		
+		
+		
 	}
 	public static void test5()
 	{

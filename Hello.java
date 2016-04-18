@@ -1,10 +1,4 @@
-<<<<<<< HEAD
-public class Hello
-{
-	public static void main(String[] args)
-	{
-		System.out.println("Hello World!");
-=======
+
 //package tw;
 /**
 *Description
@@ -143,6 +137,5 @@ public class Hello
 	{
 		if(totalLine%2==0) totalLine-=1;
 		for(int i=1;i<=totalLine;++i) printLineStar(i,totalLine);
->>>>>>> 73244f4582ac657af5fa7599850061dcd1d91b85
 	}
 }
