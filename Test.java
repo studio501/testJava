@@ -121,21 +121,22 @@ public class Test
 			{
 				super("sndmfakjn");
 				Container ct = getContentPane();
-				//ct.setLayout(null);
+				ct.setLayout(null);
 				JLabel jl = new JLabel("JFrame 窗体");
 				jl.setHorizontalAlignment(SwingConstants.CENTER);
 				ct.add(jl);
-				// JButton bl = new JButton("弹出对话框");
-				// bl.setBounds(10,10,100,20);
-				// bl.addActionListener(new ActionListener(){
-					// public void actionPerformed(ActionEvent e)
-					// {
-						// myJDialog jd = new myJDialog(myFrame.this);
-						// jd.setVisible(true);
+				jl.setBounds(200,10,540,258);
+				JButton bl = new JButton("弹出对话框");
+				bl.setBounds(10,10,100,20);
+				bl.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e)
+					{
+						myJDialog jd = new myJDialog(myFrame.this);
+						jd.setVisible(true);
 						
-					// }
-				// });
-				// ct.add(bl);
+					}
+				});
+				ct.add(bl);
 				setVisible(true);
 				setSize(500,300);
 				setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
