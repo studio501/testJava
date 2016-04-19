@@ -4,6 +4,9 @@ import java.lang.reflect.Field;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+import javax.swing.table.*;
+//import java.util.TableModelListener;
+import javax.swing.event.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.lang.reflect.*;
@@ -76,6 +79,120 @@ public class Test
 		//test11();
 		//test12();
 		test13();
+		//test14();
+		//test15();
+		//test16();
+	}
+	public static void test16()
+	{
+		class ThreadList
+		{
+			private ThreadGroup getRootThreadGroups()
+			{
+				ThreadGroup rootGroup = Thread.currentThread().getThreadGroup();
+				while(true)
+				{
+					if(rootGroup.getParent()!=null) rootGroup = rootGroup.getParent();
+					else break;
+				}
+				return rootGroup;
+			}
+			
+			public List<String> getThreads(ThreadGroup group)
+			{
+				List<String> threadList = new java.util.ArrayList<String>();
+				Thread[] threads = new Thread[group.activeCount()];
+				int count = group.enumerate(threads,false);
+				for(int i=0;i<count;++i) threadList.add(group.getName()+"线程组: "+threads[i].getName());
+				return threadList;
+			}
+			public List<String> getThreadGroups(ThreadGroup group)
+			{
+				List<String> threadList = getThreads(group);
+				ThreadGroup[] gps = new ThreadGroup[group.activeGroupCount()];
+				int count = group.enumerate(gps,false);
+				for(int i=0;i<count;++i) threadList.addAll(getThreads(gps[i]));
+				return threadList;
+			}
+		}
+		ThreadList tl = new ThreadList();
+		for(String str : tl.getThreadGroups(tl.getRootThreadGroups()))
+			myprint(str);
+	}
+	public static void test15()
+	{
+		class ThreadState implements Runnable
+		{
+			public synchronized void waitForASecond()throws InterruptedException
+			{
+				wait(1000*2);
+			}
+			public synchronized void waitForever()throws InterruptedException
+			{
+				wait();
+			}
+			public synchronized void notifyNow()throws InterruptedException
+			{
+				notify();
+			}
+			public void run()
+			{
+				try
+				{
+					waitForASecond();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+				for(int i=0;i<100;++i)
+					myprint("print i : "+i);
+			}
+		}
+		
+		ThreadState state = new ThreadState();
+		Thread thd = new Thread(state);
+		myprint("新建线程: "+thd.getState());
+		thd.start();
+		myprint("启动线程: "+thd.getState());
+		try
+		{
+			thd.sleep(1000);
+			myprint("计时等待: "+thd.getState());
+			state.notifyNow();
+			myprint("唤醒线程: "+thd.getState());
+			thd.sleep(1000);
+			myprint("终止线程: "+thd.getState());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+	}
+	public static void test14()
+	{
+		Thread a = new Thread("tha"){
+			int ct = 100;
+			public void run()
+			{
+				while(ct>0)
+				{
+					--ct;
+					myprint("run tha... "+ct);
+				}
+				
+			}
+		};
+		a.start();
+		
+		int ct=100;
+		while(ct>0)
+		{
+			--ct;
+			myprint("run in main... "+ct);
+		}
+		
 	}
 	public static void test13()
 	{
@@ -117,6 +234,11 @@ public class Test
 		
 		class myFrame extends JFrame
 		{
+			private Icon i1,i2;
+			final private Thread t;
+			final private Thread tha;
+			final private Thread thb;
+			
 			public myFrame()
 			{
 				super("sndmfakjn");
@@ -125,7 +247,7 @@ public class Test
 				JLabel jl = new JLabel("JFrame 窗体");
 				jl.setHorizontalAlignment(SwingConstants.CENTER);
 				ct.add(jl);
-				jl.setBounds(200,10,540,258);
+				jl.setBounds(400,10,540,258);
 				JButton bl = new JButton("弹出对话框");
 				bl.setBounds(10,10,100,20);
 				bl.addActionListener(new ActionListener(){
@@ -149,17 +271,320 @@ public class Test
 				//jf.setBounds(10,10,100,20);
 				//ct.add(jf);
 				
+				JProgressBar pb1 = new JProgressBar();
+				JProgressBar pb2 = new JProgressBar();
+				pb1.setBounds(300,600,100,20);
+				pb2.setBounds(300,700,100,20);
+				ct.add(pb1);
+				ct.add(pb2);
+				pb1.setStringPainted(true);
+				pb2.setStringPainted(true);
+				
+				tha = new Thread(new Runnable(){
+					int count = 0;
+					public void run()
+					{
+						while(true)
+						{
+							pb1.setValue(++count);
+							try
+							{
+								tha.sleep(100);
+								thb.join();
+							}
+							catch(Exception e)
+							{
+								e.printStackTrace();
+							}
+							if(count>=100) break;
+						}
+					}
+				});
+				
+				tha.start();
+				thb = new Thread(new Runnable(){
+					int count = 0;
+					public void run()
+					{
+						while(true)
+						{
+							pb2.setValue(++count);
+							try
+							{
+								thb.sleep(100);
+							}
+							catch(Exception e)
+							{
+								e.printStackTrace();
+							}
+							if(count >=100) break;
+						}
+					}
+				});
+				thb.start();
+				
+				
+				URL url1 = myFrame.class.getResource("bd_logo1.png");
+				URL url2 = myFrame.class.getResource("google-search.png");
+				i1 = new ImageIcon(url1);
+				i2 = new ImageIcon(url2);
 				try
 				{
-					URL url = myFrame.class.getResource("bd_logo1.png"); //new URL("bd_logo1.png");
-					Icon icon = new ImageIcon(url);
-					jl.setIcon(icon);
+					// URL url = myFrame.class.getResource("bd_logo1.png"); //new URL("bd_logo1.png");
+					// Icon icon = new ImageIcon(url);
+					jl.setIcon(i1);
 				}
 				catch(Exception e)
 				{
 					e.printStackTrace();
 				}
 				
+				
+				t = new Thread(new Runnable(){
+					int count = 200;
+					public void run()
+					{
+						while(count>0)
+						{
+							jl.setBounds(400 - (200-count),10,540,258);
+							try
+							{
+								//t.sleep(1000);
+							}
+							catch(Exception e)
+							{
+								e.printStackTrace();
+							}
+							count-=4;
+							if(count<=0) count = 200;
+						}
+					}
+				});
+				t.start();
+				
+				JLabel lb1 = new JLabel("备注 ");
+				ct.add(lb1);
+				lb1.setBounds(50,200,100,50);
+				JScrollPane sp = new JScrollPane();
+				ct.add(sp);
+				sp.setBounds(150,200,200,500);
+				
+				JTextArea ta = new JTextArea();
+				ta.setLineWrap(true);
+				ta.setRows(3);
+				ta.setColumns(15);
+				sp.setViewportView(ta);
+				
+				ta.addKeyListener(new KeyListener(){
+					public void keyPressed(KeyEvent e)
+					{
+						String kt = KeyEvent.getKeyText(e.getKeyCode());
+						if(e.isActionKey()) myprint("您按下的是动作键"+ kt);
+						else
+						{
+							myprint("按下非动作键"+kt);
+							
+						}
+					}
+					
+					public void keyTyped(KeyEvent e)
+					{
+						myprint("此次输入的是 "+e.getKeyChar());
+					}
+					
+					public void keyReleased(KeyEvent e)
+					{
+						String kt = KeyEvent.getKeyText(e.getKeyCode());
+						myprint("您释放的是 "+kt);
+					}
+				});
+				
+				jl.addMouseListener(new MouseListener(){
+					public void mouseEntered(MouseEvent e)
+					{
+						myprint("光标移入组件");
+						jl.setIcon(i2);
+					}
+					public void mousePressed(MouseEvent e)
+					{
+						myprint("鼠标按钮按下");
+						int i = e.getButton();
+						if(i==MouseEvent.BUTTON1) myprint("左键");
+						else if(i==MouseEvent.BUTTON2) myprint("滚轮");
+						else myprint("右键");
+					}
+					public void mouseReleased(MouseEvent e)
+					{
+						myprint("鼠标按钮释放");
+						int i = e.getButton();
+						if(i==MouseEvent.BUTTON1) myprint("左键");
+						else if(i==MouseEvent.BUTTON2) myprint("滚轮");
+						else myprint("右键");
+					}
+					public void mouseClicked(MouseEvent e)
+					{
+						myprint("单击了鼠标按钮");
+						int i = e.getButton();
+						if(i==MouseEvent.BUTTON1) myprint("左键");
+						else if(i==MouseEvent.BUTTON2) myprint("滚轮");
+						else myprint("右键");
+						
+						myprint("单击次数: "+e.getClickCount());
+					}
+					public void mouseExited(MouseEvent e)
+					{
+						jl.setIcon(i1);
+						myprint("光标移出组件");
+					}
+				});
+				
+				this.addWindowFocusListener(new WindowFocusListener(){
+					public void windowGainedFocus(WindowEvent e)
+					{
+						myprint("容器获得了焦点");
+					}
+					
+					public void windowLostFocus(WindowEvent e)
+					{
+						myprint("容器失去了焦点");
+					}
+				});
+				
+				this.addWindowStateListener(new WindowStateListener(){
+					public void windowStateChanged(WindowEvent e)
+					{
+						int oldstate = e.getOldState();
+						int newstate = e.getNewState();
+						String from="",to="";
+						switch(oldstate)
+						{
+							case Frame.NORMAL:
+							from = "正常化";
+							break;
+							case Frame.MAXIMIZED_BOTH:
+							from ="最大化";
+							break;
+							default:
+							from="图标化";
+						}
+						switch(newstate)
+						{
+							case Frame.NORMAL:
+							to = "正常化";
+							break;
+							case Frame.MAXIMIZED_BOTH:
+							to ="最大化";
+							break;
+							default:
+							to="图标化";
+						}
+						myprint(from+"-------------->"+to);
+					}
+				});
+				
+				this.addWindowListener(new WindowListener(){
+					public void windowActivated(WindowEvent e)
+					{
+						myprint("窗口被激活");
+					}
+					
+					public void windowOpened(WindowEvent e)
+					{
+						myprint("窗口被打开");
+					}
+					public void windowIconified(WindowEvent e)
+					{
+						myprint("窗口被图标化");
+					}
+					public void windowDeiconified(WindowEvent e)
+					{
+						myprint("窗口正常化");
+					}
+					public void windowClosing(WindowEvent e)
+					{
+						myprint("窗口将要被关闭");
+					}
+					public void windowDeactivated(WindowEvent e)
+					{
+						myprint("窗口不再处于激活状态");
+					}
+					public void windowClosed(WindowEvent e)
+					{
+						myprint("窗口已经被关闭");
+					}
+				});
+				
+				String lbs[]={"a","b","d","e","f"};
+				//DefaultComboBoxModel model = new DefaultComboBoxModel(lbs);
+				JComboBox<String> cb = new JComboBox<String>(lbs);
+				cb.setBounds(0,400,100,100);
+				ct.add(cb);
+				
+				cb.addItemListener(new ItemListener(){
+					public void itemStateChanged(ItemEvent e)
+					{
+						int sc = e.getStateChange();
+						String item = e.getItem().toString();
+						if(sc==ItemEvent.SELECTED)
+						{
+							myprint(String.format("由选中%s 触发",item));
+						}
+						else if(sc==ItemEvent.DESELECTED)
+						{
+							myprint(String.format("由取消%s 触发",item));
+							
+						}
+						else myprint("由其它原因触发");
+					}
+					
+				});
+				
+				String[] columnName = {"A","B"};
+				String[][] rowValues = {{"A1","B1"},{"A2","B2"},{"A3","B3"},{"A4","B4"},{"A5","B5"}};
+				DefaultTableModel tableModele = new DefaultTableModel(rowValues,columnName);
+				JTable tb = new JTable(tableModele);
+				tb.setBounds(500,300,200,200);
+				ct.add(tb);
+				
+				JButton ab = new JButton("添加");
+				ab.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e)
+					{
+						String[] rv = {"aa","bb"};
+						tableModele.addRow(rv);
+					}
+				});
+				ab.setBounds(700,300,200,100);
+				ct.add(ab);
+				
+				JButton db = new JButton("删除");
+				db.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e)
+					{
+						int[] sr = tb.getSelectedRows();
+						for(int row=0;row<sr.length;++row) tableModele.removeRow(sr[row]-row);
+					}
+				});
+				db.setBounds(700,400,200,100);
+				ct.add(db);
+				
+				tableModele.addTableModelListener(new TableModelListener(){
+					public void tableChanged(TableModelEvent e)
+					{
+						int type = e.getType();
+						int row = e.getFirstRow()+1;
+						int column = e.getColumn()+1;
+						if(type == TableModelEvent.INSERT)
+						{
+							myprint("此次事件由插入行触发"+row);
+						}
+						else if(type==TableModelEvent.UPDATE)
+							myprint(String.format("事件由修改%d行 %d列触发",row,column));
+						else if(type==TableModelEvent.DELETE)
+							myprint(String.format("事件由删除%d行触发",row));
+						else myprint("事件由其它原因触发");
+					}
+				});
 			}
 		}
 		
