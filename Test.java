@@ -10,7 +10,7 @@ import javax.swing.event.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.lang.reflect.*;
-import java.lang.*;
+//import java.lang.*;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Iterator;
@@ -21,6 +21,12 @@ import java.util.HashMap;
 import java.io.*;
 import java.util.zip.*;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
+import java.net.*;
 
 public class Test
 {
@@ -78,10 +84,527 @@ public class Test
 		//test10();
 		//test11();
 		//test12();
-		test13();
+		//test13();//JFrame 相关
 		//test14();
 		//test15();
 		//test16();
+		//test17();
+		//test18();
+		//test19();//获取内网中所有ip地址
+		//test20();//获取指定url的内容并输出到本地文件
+		//test21();//获取主机ip和名字
+		//test22();//单向通信程序
+		test23();
+	}
+	public static void test23()
+	{
+		class Weather extends Thread
+		{
+			String weather = "节目预报: 八点中操场集合";
+			int port = 2016;
+			InetAddress iadress = null;
+			MulticastSocket socket = null;
+			
+			public Weather()
+			{
+				try
+				{
+					iadress = InetAddress.getByName("224.255.10.0");
+					socket = new MulticastSocket(port);
+					socket.setTimeToLive(1);
+					socket.joinGroup(iadress);
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			public void run()
+			{
+				while(true)
+				{
+					DatagramPacket packet = null;
+					byte data[] = weather.getBytes();
+					packet = new DatagramPacket(data,data.length,iadress,port);
+					myprint(new String(data));
+					try
+					{
+						socket.send(packet);
+						sleep(3000);
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		
+		class Receive extends JFrame implements Runnable,ActionListener
+		{
+			int port;
+			InetAddress group = null;
+			MulticastSocket socket = null;
+			JButton ince = new JButton("开始接收");
+			JButton stop = new JButton("停止接收");
+			JTextArea inceAr = new JTextArea(10,10);
+			JTextArea inced = new JTextArea(10,10);
+			Thread thread;
+			boolean b = false;
+			public Receive()
+			{
+				super("广播接收器");
+				setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+				thread = new Thread(this);
+				ince.addActionListener(this);
+				stop.addActionListener(this);
+				inceAr.setForeground(Color.blue);
+				JPanel north = new JPanel();
+				north.add(ince);
+				north.add(stop);
+				add(north,BorderLayout.NORTH);
+				JPanel center = new JPanel();
+				center.setLayout(new GridLayout(1,2));
+				center.add(inceAr);
+				center.add(inced);
+				add(center,BorderLayout.CENTER);
+				validate();
+				port = 2016;
+				try
+				{
+					group = InetAddress.getByName("224.255.10.0");
+					socket = new MulticastSocket(port);
+					socket.joinGroup(group);
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+				setBounds(100,100,360,380);
+				setSize(460,200);
+				setVisible(true);
+			}
+			
+			public void run()
+			{
+				while(true)
+				{
+					byte data[] = new byte[1024];
+					DatagramPacket packet = null;
+					packet = new DatagramPacket(data,data.length,group,port);
+					try
+					{
+						socket.receive(packet);
+						String message = new String(packet.getData(),0,packet.getLength());
+						inceAr.setText("正在接收的内容: \n" + message);
+						inced.append(message+"\n");
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+					
+					if(b) break;
+				}
+			}
+			
+			public void actionPerformed(ActionEvent e)
+			{
+				if(e.getSource()==ince)
+				{
+					ince.setBackground(Color.red);
+					stop.setBackground(Color.yellow);
+					if(!(thread.isAlive()))
+						thread = new Thread(this);
+					thread.start();
+					b=false;
+				}
+				else if(e.getSource()==stop)
+				{
+					ince.setBackground(Color.yellow);
+					stop.setBackground(Color.red);
+					b=true;
+				}
+			}
+		}
+		
+		Weather w = new Weather();
+		w.start();
+		
+		Receive r = new Receive();
+		
+	}
+	public static void test22()
+	{
+		class myTcp
+		{
+			private BufferedReader reader;
+			private ServerSocket server;
+			private Socket socket;
+			
+			public void getserver()
+			{
+				
+				try
+				{
+					server = new ServerSocket(2016);
+					server.setSoTimeout(10000);
+					myprint("服务器socket创建成功");
+					while(true)
+					{
+						myprint("等待客户端连接");
+						socket = server.accept();
+						reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+						getClientMessage();
+					}
+				}
+				catch(SocketTimeoutException e)
+				{
+					myprint("连接超时");
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			private void getClientMessage()
+			{
+				try
+				{
+					while(true) myprint("客户机 : "+reader.readLine());
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+				
+				try
+				{
+					if(reader!=null) reader.close();
+					if(socket!=null) socket.close();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		class myClient extends JFrame
+		{
+			private PrintWriter writer;
+			Socket socket;
+			private JTextArea ta = new JTextArea();
+			private JTextField tf = new JTextField();
+			Container cc;
+			public myClient(String title)
+			{
+				super(title);
+				cc=this.getContentPane();
+				cc.add(ta,"North");
+				cc.add(tf,"South");
+				
+				tf.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent e)
+					{
+						String str = tf.getText();
+						if (str!=null&&writer!=null)
+						{
+							writer.println(str);
+							ta.append(str+'\n');
+							tf.setText("");
+						}
+					}
+				});
+				setBounds(500,500,340,220);
+				setVisible(true);
+				
+			}
+			
+			private void connect()
+			{
+				ta.append("尝试连接\n");
+				try
+				{
+					socket = new Socket("127.0.0.1",2016);
+					writer = new PrintWriter(socket.getOutputStream(),true);
+					ta.append("完成链接\n");
+					
+					InetAddress netAdr = socket.getInetAddress();
+					String netIp = netAdr.getHostAddress();
+					int netPort = socket.getPort();
+					
+					myprint("远程 : "+netIp+" "+netPort);
+					InetAddress localAdr = socket.getLocalAddress();
+					String localIp = localAdr.getHostAddress();
+					int localPort = socket.getLocalPort();
+					myprint("客户 : "+localIp+" "+localPort);
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		Thread tha = new Thread(new Runnable(){
+			public void run()
+			{
+				myTcp tcp = new myTcp();
+				tcp.getserver();
+			}
+		});
+		tha.start();
+		
+		
+		myClient clien = new myClient("向服务器发送消息");
+		clien.connect();
+		
+		
+		
+	}
+	public static void test21()
+	{
+		InetAddress ip;
+		try
+		{
+			ip = InetAddress.getLocalHost();
+			myprint(ip.getHostName()+"----->"+ip.getHostAddress());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test20()
+	{
+		String urlString = "http://www.baidu.com";
+		URL url = null;
+		URLConnection conn = null;
+		java.util.Collection<String> urlCollection = new java.util.ArrayList<String>();
+		try
+		{
+			url = new URL(urlString);
+			conn = url.openConnection();
+			conn.connect();
+			InputStream is = conn.getInputStream();
+			
+			InputStreamReader in = new InputStreamReader(is,"UTF-8");
+			BufferedReader br = new BufferedReader(in);
+			String nextLine = br.readLine();
+			
+			//FileOutputStream fs = new FileOutputStream("3.txt",true);
+			//DataOutputStream ds = new DataOutputStream(fs);
+			//ds.writeUTF("使用 writeUTF 写入数据");
+			
+			FileWriter writer = new FileWriter("1.txt",true);
+			
+			
+			while(nextLine!=null)
+			{
+				writer.write(nextLine);
+				writer.flush();
+				//fs.write(nextLine);
+				//ds.writeUTF(nextLine);
+				//urlCollection.add(nextLine);
+				nextLine=br.readLine();
+			}
+			writer.close();
+			
+			// Iterator it = urlCollection.iterator();
+			// while(it.hasNext())
+			 // myprint((String)it.next());
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+	}
+	public static void test19()
+	{
+		class Ip
+		{
+			HashMap<String,String> ping;
+			public HashMap<String,String> getPing()
+			{
+				return ping;
+			}
+			
+			//int threadCount = 0;
+			public Ip()
+			{
+				ping = new HashMap<String,String>();
+			}
+			
+			public void Ping(String ip) throws Exception
+			{
+				
+				//while(threadCount>30) Thread.sleep(50);
+				//++threadCount;
+				PingIp p = new PingIp(ip);
+				p.start();
+			}
+			public void PingAll()throws Exception
+			{
+				InetAddress host = InetAddress.getLocalHost();
+				String hostAddress = host.getHostAddress();
+				myprint("本机ip: "+hostAddress);
+				int k=0;
+				k = hostAddress.lastIndexOf(".");
+				String ss = hostAddress.substring(0,k+1);
+				for(int i=1;i<=255;++i)
+				{
+					String iip = ss+i;
+					Ping(iip);
+				}
+				//while(threadCount>0) Thread.sleep(50);
+			}
+			
+			class PingIp extends Thread
+			{
+				public String ip;
+				public PingIp(String ip)
+				{
+					this.ip = ip;
+				}
+				public void run()
+				{
+					try
+					{
+						Process p = Runtime.getRuntime().exec("ping "+ip+" -w 300 -n 1");
+						
+						InputStreamReader ir = new InputStreamReader(p.getInputStream());
+						LineNumberReader input = new LineNumberReader(ir);
+						//for(int i=1;i<7;++i) input.readLine();
+						String line = input.readLine();
+						while(line!=null)
+						{
+							//myprint(line);
+							if(line!=null&&!line.equals(""))
+							{
+								if(line.substring(0,2).equals("来自")||(line.length()>10&&line.substring(0,10).equals("Reply from")))
+								{
+									
+									ping.put(ip,"true");
+								}
+							}
+							line = input.readLine();
+						}
+						
+						//--threadCount;
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+		}
+		
+		try
+		{
+			Ip ip = new Ip();
+			ip.PingAll();
+			
+			Thread.sleep(2000);
+			for(Map.Entry<String,String> entry : ip.getPing().entrySet())
+			{
+				myprint(entry.getKey());
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
+		
+	}
+	public static void test18()
+	{
+		Thread thd = new Thread(new Runnable(){
+			public void run()
+			{
+				for(int i=1;i<6;++i)
+				{
+					try
+					{
+						Thread.sleep(100);
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+					myprint("紧急情况 "+i+" 出发");
+				}
+			}
+		});
+		thd.start();
+		
+		for (int i=1;i<6;++i)
+		{
+			try
+			{
+				Thread.sleep(10);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+			myprint("正常情况 "+i+" 出发");
+			try
+			{
+				thd.join();
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+		}
+	}
+	public static void test17()
+	{
+		class threadSafe implements Runnable
+		{
+			int num = 10;
+			public synchronized boolean doit()
+			{
+				if(num>0)
+				{
+					try
+					{
+						Thread.sleep(100);
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+					myprint("还有车票 "+num--);
+					return true;
+				}
+				else return false;
+			}
+			public void run()
+			{
+				while(true)
+				{
+					if(!doit()) break;
+				}
+			}
+		}
+		
+		threadSafe t = new threadSafe();
+		Thread ta = new Thread(t);
+		Thread tb = new Thread(t);
+		Thread tc = new Thread(t);
+		Thread td = new Thread(t);
+		
+		ta.start();
+		tb.start();
+		tc.start();
+		td.start();
 	}
 	public static void test16()
 	{

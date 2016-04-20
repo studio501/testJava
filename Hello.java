@@ -18,6 +18,7 @@ public class Hello
 	*/
 	public static void main(String arg[])
 	{
+		//RunTime r = RunTime.getRuntime();
 		System.out.print("Hello");
 		int age1=200;
 		char c ='жа';
