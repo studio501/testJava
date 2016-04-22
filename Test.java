@@ -27,6 +27,7 @@ import java.net.Socket;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.net.*;
+import java.sql.*;
 
 public class Test
 {
@@ -94,7 +95,598 @@ public class Test
 		//test20();//获取指定url的内容并输出到本地文件
 		//test21();//获取主机ip和名字
 		//test22();//单向通信程序
-		test23();
+		//test23();//网络广播程序
+		//test24();//聊天室程序
+		//test25();//传递对象
+		//test26();//传递图片
+		//test27();//数据库相关操作
+		test28();
+		
+	}
+	public static void test28()
+	{
+		class drawCircle extends JFrame
+		{
+			private int OVAL_WIDTH=80;
+			private int OVAL_HEIGHT=80;
+			public drawCircle(String title)
+			{
+				super(title);
+				initalize();
+			}
+			public void initalize()
+			{
+				setSize(300,200);
+				setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				setContentPane(new DrawPanel());
+				setVisible(true);
+			}
+			
+			class DrawPanel extends JPanel
+			{
+				public void paint(Graphics g)
+				{
+					super.paint(g);
+					// g.drawOval(10,10,OVAL_WIDTH,OVAL_HEIGHT);
+					// g.drawOval(80,10,OVAL_WIDTH,OVAL_HEIGHT);
+					// g.drawOval(150,10,OVAL_WIDTH,OVAL_HEIGHT);
+					// g.drawOval(50,70,OVAL_WIDTH,OVAL_HEIGHT);
+					// g.drawOval(120,70,OVAL_WIDTH,OVAL_HEIGHT);
+					
+					// g.drawArc(100,100,100,50,270,200);
+					// g.drawLine(10,10,50,10);
+					// int xs[]={100,150,50};
+					// int ys[]={100,150,150};
+					// g.drawPolygon(xs,ys,3);
+					
+					g.drawRect(10,10,100,50);
+					g.drawRoundRect(10,70,100,50,10,10);
+					g.fillRect(120,10,100,50);
+					g.fillRoundRect(120,70,100,50,10,10);
+				}
+			}
+		}
+		
+		new drawCircle("hahah");
+	}
+	public static void test27()
+	{
+		try
+		{
+			Class.forName("com.mysql.jdbc.Driver");
+			String url = "jdbc:mysql://localhost:3306/table1";
+			Connection conn = DriverManager.getConnection(url,"root","Inryygy007");
+			Statement st = conn.createStatement();
+			
+			// String sql = "create table if not exists user_db(username text,password text,sex text,age int)";
+			// st.executeUpdate(sql);
+			
+			// sql = "insert into user_db(username,password,sex,age) values('tw','222','male','26')";
+			// st.executeUpdate(sql);
+			
+			// sql = "insert into user_db(username,password,sex,age) values(?,?,?,?)";
+			// PreparedStatement ps = conn.prepareStatement(sql);
+			// ps.setString(1,"lisi");
+			// ps.setString(2,"aaa");
+			// ps.setString(3,"male");
+			// ps.setInt(4,27);
+			// ps.executeUpdate();
+			String username,pwd,sex;
+			int age;
+			
+			String sql = "select * from user_db";
+			ResultSet rs = st.executeQuery(sql);
+			
+			while(rs.next())
+			{
+				myprint(rs.getString("username")+" "+rs.getString("password")+" "+
+				rs.getString("sex")+" "+rs.getInt("age"));
+			}
+			
+			sql = "update user_db set age = 200 where sex = 'male' ";
+			st.executeUpdate(sql);
+			
+			conn.close();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test26()
+	{
+		class myServer
+		{
+			private ServerSocket server;
+			private int index = 0;
+			public void createSocket()
+			{
+				try
+				{
+					server = new ServerSocket(2016);
+					
+					while(true)
+					{
+						++index;
+						myprint("等待客户端连接");
+						Socket socket = server.accept();
+						new Thread(new Runnable(){
+							public void run()
+							{
+								receiveFile(socket,index);
+							}
+						}).start();
+						
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			public void receiveFile(Socket socket,int n)
+			{
+				byte[] inputByte = null;
+				int length=0;
+				DataInputStream dis=null;
+				FileOutputStream fos = null;
+				
+				try
+				{
+					dis = new DataInputStream(socket.getInputStream());
+					myprint(String.format("./cc%d.png",n));
+					File file = new File(String.format("./cc%d.png",n));
+					fos = new FileOutputStream(file);
+					inputByte = new byte[1024];
+					while((length = dis.read(inputByte,0,inputByte.length))>0)
+					{
+						myprint("in while");
+						fos.write(inputByte,0,length);
+						fos.flush();
+					}
+					fos.close();
+					socket.close();
+					dis.close();
+					myprint("完成接收");
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		class myClient
+		{
+			Socket socket;
+			DataOutputStream dos=null;
+			FileInputStream fis = null;
+			
+			public myClient(String fileName)
+			{
+				try
+				{
+					socket = new Socket("127.0.0.1",2016);
+					dos = new DataOutputStream(socket.getOutputStream());
+					File file = new File("./"+fileName);
+					fis = new FileInputStream(file);
+					byte[] sendByte = new byte[1024];
+					int length = 0;
+					while((length=fis.read(sendByte,0,sendByte.length))>0)
+					{
+						
+						dos.write(sendByte,0,length);
+						dos.flush();
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		new Thread(new Runnable(){
+			public void run()
+			{
+				new myServer().createSocket();
+			}
+		}).start();
+		
+		try
+		{
+			Thread.sleep(10);
+			new myClient("arrow.png");
+			Thread.sleep(400);
+			new myClient("bd_logo1.png");
+			Thread.sleep(400);
+			new myClient("google-search.png");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+	public static void test25()
+	{
+		class User implements Serializable
+		{
+			public String name;
+			public String pwd;
+			
+			public User(String name,String pwd)
+			{
+				this.name=name;
+				this.pwd=pwd;
+			}
+		}
+		
+		class myServer
+		{
+			private ServerSocket server;
+			
+			public void createSocket()
+			{
+				try
+				{
+					server = new ServerSocket(2016);
+					
+					while(true)
+					{
+						
+						myprint("等待客户端连接");
+						Socket socket = server.accept();
+						invoke(socket);
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			public void invoke(Socket socket)
+			{
+				new Thread(new Runnable(){
+					public void run()
+					{
+						ObjectInputStream is = null;
+						ObjectOutputStream os = null;
+						try
+						{
+							is = new ObjectInputStream(socket.getInputStream());
+							os = new ObjectOutputStream(socket.getOutputStream());
+							
+							Object obj = is.readObject();
+							User ur = (User)obj;
+							myprint("user is :"+ur.name+"  "+ur.pwd);
+							
+							ur.name=ur.name+"_new";
+							ur.pwd=ur.pwd+"_new";
+							os.writeObject(ur);
+							os.flush();
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+				}).start();
+			}
+		}
+		
+		class myClient
+		{
+			Socket socket;
+			ObjectInputStream is=null;
+			ObjectOutputStream os = null;
+			
+			public myClient(int i)
+			{
+				try
+				{
+					socket = new Socket("127.0.0.1",2016);
+					os = new ObjectOutputStream(socket.getOutputStream());
+					User ur = new User(String.format("user%d",i),"pppp");
+					os.writeObject(ur);
+					
+					is = new ObjectInputStream(new BufferedInputStream(socket.getInputStream()));
+					Object obj = is.readObject();
+					if(obj!=null)
+					{
+						ur = (User)obj;
+						myprint("new use : "+ur.name+"  "+ur.pwd );
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		new Thread(new Runnable(){
+			public void run()
+			{
+				new myServer().createSocket();
+			}
+		}).start();
+		for (int i=0;i<100;++i)
+			new myClient(i);
+	}
+	public static void test24()
+	{
+		class chatServer
+		{
+			private java.util.Hashtable<String,Socket> map = new java.util.Hashtable<String,Socket>();
+			private ServerSocket server;
+			private Socket socket;
+			private java.util.List<Client> clients = new java.util.ArrayList<Client>();
+			private boolean bStart = false;
+			private int index = 0;
+			public void createSocket()
+			{
+				try
+				{
+					server = new ServerSocket(2016);
+					bStart = true;
+					while(bStart)
+					{
+						++index;
+						myprint("等待客户端连接");
+						socket = server.accept();
+						Client c = new Client(socket);
+						myprint(socket.getInetAddress().getHostAddress()+" connected "+index+" clients");
+						clients.add(c);
+						new Thread(c).start();
+						
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			class Client implements Runnable
+			{
+				DataInputStream dis = null;
+				DataOutputStream dos = null;
+				Socket s = null;
+				boolean bStart = false;
+				
+				Client(Socket s)
+				{
+					this.s=s;
+					try
+					{
+						dis = new DataInputStream(s.getInputStream());
+						dos = new DataOutputStream(s.getOutputStream());
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+					bStart = true;
+				}
+				
+				public void sendToEveryClient(String str)
+				{
+					try
+					{
+						dos.writeUTF(str);
+						dos.flush();
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+				
+				public void run()
+				{
+					try
+					{
+						while(bStart && !s.isClosed())
+						{
+							String str = dis.readUTF();
+							myprint(str);
+							for(int i=0;i<clients.size();++i)
+							{
+								Client c = clients.get(i);
+								
+								c.sendToEveryClient(str);
+							}
+						}
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+			
+		}
+		
+		
+		class chatClient extends JFrame
+		{
+			String ipStr;
+			String name;
+			
+			TextArea taContent = new TextArea();
+			JTextField tfTxt = new JTextField(20);
+			
+			JButton send = new JButton("发送");
+			JButton connect = new JButton("连接");
+			JButton clear = new JButton("清空");
+			
+			boolean live = false;
+			JPanel p1 = new JPanel();
+			JPanel p2 = new JPanel();
+			
+			Socket s = null;
+			DataOutputStream dos = null;
+			DataInputStream dis = null;
+			
+			boolean bConnected = false;
+			Thread t = new Thread(new RectToServer());
+			
+			public void launchFrame()
+			{
+				taContent.setEditable(false);
+				p2.setLayout(new FlowLayout(FlowLayout.CENTER,10,5));
+				p2.add(send);
+				p2.add(connect);
+				p2.add(clear);
+				
+				Container con = this.getContentPane();
+				
+				con.add(taContent,"North");
+				con.add(tfTxt,"Center");
+				con.add(p2,"South");
+				
+				this.setSize(300,500);
+				this.setLocation(400,200);
+				//this.setTitle("chat client");
+				this.setVisible(true);
+				this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				
+				connect.addActionListener(new Connect());
+				send.addActionListener(new SendMsg());
+				clear.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent ee)
+					{
+						taContent.setText("");
+					}
+				});
+			}
+			
+			public void connectToServer()
+			{
+				try
+				{
+					s = new Socket(ipStr,2016);
+					dos = new DataOutputStream(s.getOutputStream());
+					dis = new DataInputStream(s.getInputStream());
+					
+					bConnected = true;
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			public void disConnect()
+			{
+				bConnected = false;
+				try
+				{
+					if(s!=null) s.close();
+					if(dos!=null) dos.close();
+					if(dis!=null) dis.close();
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+			
+			class SendMsg implements ActionListener
+			{
+				public void actionPerformed(ActionEvent ee)
+				{
+					if(connect.getActionCommand()=="连接")
+					{
+						JOptionPane.showMessageDialog(chatClient.this,"没有找到指定服务器","错误提示",1);
+					}
+					else
+					{
+						String str = tfTxt.getText();
+						str = name+": "+str;
+						tfTxt.setText("");
+						
+						try
+						{
+							dos.writeUTF(str);
+							dos.flush();
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+			
+			 class Connect implements ActionListener
+			{
+				public void actionPerformed(ActionEvent ee)
+				{
+					if(ee.getActionCommand()=="连接")
+					{
+						connectToServer();
+						try
+						{
+							t.start();
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+						connect.setText("断开连接");
+					}
+					else if(ee.getActionCommand()=="断开连接")
+					{
+						disConnect();
+						connect.setText("连接");
+					}
+				}
+			}
+			
+			 class RectToServer implements Runnable
+			{
+				public void run()
+				{
+					try
+					{
+						while(bConnected)
+						{
+							String str = dis.readUTF();
+							taContent.append(str+"\n");
+						}
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			public chatClient(String ipStr,String name)
+			{
+				super(name);
+				this.ipStr = ipStr;
+				this.name = name;
+				
+				this.launchFrame();
+			}
+			
+		}
+		
+		Thread t = new Thread(new Runnable(){
+			public void run()
+			{
+				chatServer cs = new chatServer();
+				cs.createSocket();
+			}
+		});
+		t.start();
+		
+		chatClient c1 = new chatClient("192.168.7.234","tw1"); //192.168.7.234
+		chatClient c2 = new chatClient("192.168.8.233","tw2");
+		chatClient c3 = new chatClient("192.168.7.235","tw3");//192.168.7.235
 	}
 	public static void test23()
 	{
